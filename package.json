@@ -6,9 +6,15 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "coverage": "nyc --reporter=text --reporter=lcov node --test",
+    "coverage:check": "nyc --check-coverage --lines 90 --functions 90 --branches 85 --statements 90 --reporter=text --reporter=lcov node --test"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "nyc": "^18.0.0"
   }
 }

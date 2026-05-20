@@ -1,0 +1,2 @@
+[coverage]
+ignores = ["test/**", "src/server.js"]
