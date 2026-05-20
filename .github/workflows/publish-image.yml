@@ -24,26 +24,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Validate AWS OIDC configuration
+        run: |
+          if [ -z "${{ vars.AWS_ROLE_ARN }}" ]; then
+            echo "::error::Set repo variable AWS_ROLE_ARN before running the publish workflow."
+            exit 1
+          fi
+
       - name: Configure AWS credentials with OIDC
-        if: ${{ vars.AWS_ROLE_ARN != '' }}
         uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-
-      - name: Configure AWS credentials with static secrets
-        if: ${{ vars.AWS_ROLE_ARN == '' && secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
-        uses: aws-actions/configure-aws-credentials@v6.1.0
-        with:
-          aws-region: ${{ env.AWS_REGION }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Validate AWS publish configuration
-        if: ${{ vars.AWS_ROLE_ARN == '' && (secrets.AWS_ACCESS_KEY_ID == '' || secrets.AWS_SECRET_ACCESS_KEY == '') }}
-        run: |
-          echo "::error::Set repo variable AWS_ROLE_ARN for OIDC, or add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets."
-          exit 1
 
       - name: Log in to Amazon ECR
         id: login-ecr
