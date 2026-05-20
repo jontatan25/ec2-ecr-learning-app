@@ -1,0 +1,82 @@
+name: Publish Image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: simple-app
+  IMAGE_NAME: simple-app
+
+jobs:
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.ECR_PUBLISH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials with OIDC
+        if: ${{ vars.AWS_ROLE_ARN != '' }}
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+
+      - name: Configure AWS credentials with static secrets
+        if: ${{ vars.AWS_ROLE_ARN == '' && secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Validate AWS publish configuration
+        if: ${{ vars.AWS_ROLE_ARN == '' && (secrets.AWS_ACCESS_KEY_ID == '' || secrets.AWS_SECRET_ACCESS_KEY == '') }}
+        run: |
+          echo "::error::Set repo variable AWS_ROLE_ARN for OIDC, or add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets."
+          exit 1
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
+      - name: Smoke test container
+        env:
+          APP_HOST_PORT: "4000"
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker run -d --rm --name simple-app-smoke -p ${APP_HOST_PORT}:4000 ${IMAGE_NAME}:${IMAGE_TAG}
+          trap 'docker rm -f simple-app-smoke >/dev/null 2>&1 || true' EXIT
+          for _ in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:${APP_HOST_PORT}/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Container failed health check."
+          docker logs simple-app-smoke
+          exit 1
+
+      - name: Tag and push image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+          docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${ECR_REPOSITORY}:latest
+          docker push ${REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+          docker push ${REGISTRY}/${ECR_REPOSITORY}:latest

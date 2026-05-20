@@ -4,11 +4,11 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      APP_NAME: ec2-ecr-learning-app
+      APP_NAME: simple-app
       APP_ENV: development
       HOST: 0.0.0.0
-      PORT: 3000
-      AWS_REGION: eu-west-1
-      ECR_REPOSITORY: ec2-ecr-learning-app
+      PORT: 4000
+      AWS_REGION: eu-north-1
+      ECR_REPOSITORY: simple-app
     ports:
-      - "${APP_HOST_PORT:-3000}:3000"
+      - "${APP_HOST_PORT:-4000}:4000"

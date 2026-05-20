@@ -1,10 +1,10 @@
 const DEFAULTS = {
-  appName: "ec2-ecr-learning-app",
+  appName: "simple-app",
   appEnv: "development",
   host: "127.0.0.1",
-  port: 3000,
-  awsRegion: "eu-west-1",
-  ecrRepository: "ec2-ecr-learning-app",
+  port: 4000,
+  awsRegion: "eu-north-1",
+  ecrRepository: "simple-app",
 };
 
 function readPort(rawPort) {
