@@ -8,6 +8,16 @@ image:
 app:
   environment: development
 
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: simple-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+
 resources:
   requests:
     cpu: 100m
