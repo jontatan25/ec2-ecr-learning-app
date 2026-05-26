@@ -1,0 +1,12 @@
+1. Check the Helm release:
+   helm list
+
+2. Check the Deployment and Pods:
+   kubectl get deployments
+   kubectl get pods
+
+3. Access the service locally:
+   kubectl port-forward svc/{{ include "simple-app.fullname" . }} 4000:{{ .Values.service.port }}
+
+4. Open the health endpoint:
+   http://127.0.0.1:4000/health

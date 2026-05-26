@@ -1,0 +1,17 @@
+replicaCount: 2
+
+image:
+  repository: 829643440696.dkr.ecr.eu-north-1.amazonaws.com/simple-app
+  pullPolicy: Always
+  tag: latest
+
+app:
+  environment: production
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
